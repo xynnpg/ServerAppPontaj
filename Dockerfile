@@ -15,8 +15,7 @@ COPY . .
 
 # Build the web application for production
 # --release: Creates optimized production build
-# --web-renderer canvaskit: Better performance and consistency
-RUN flutter build web --release --web-renderer canvaskit
+RUN flutter build web --release
 
 # Stage 2: Serve with nginx
 FROM nginx:alpine
