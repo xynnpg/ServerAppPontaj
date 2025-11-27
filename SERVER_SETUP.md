@@ -8,37 +8,26 @@
 
 You have two options for accessing via your domain:
 
-### Option 1: Subdomain (Recommended) - `pontaj.binarysquad.club`
+### Option 1: Automated Setup (Recommended)
 
-#### Step 1: DNS Configuration
-Add an A record to your DNS:
-- **Type**: A
-- **Name**: pontaj
-- **Value**: Your server IP address
-- **TTL**: 3600 (or auto)
+I've created a script that automatically detects your Nginx setup and configures it for you.
 
-#### Step 2: Copy Nginx Configuration
-On your server, create the nginx config:
+1. **Upload the script to your server** (or create it there).
+2. **Make it executable and run it**:
 
 ```bash
-# Copy the reverse proxy config
-sudo nano /etc/nginx/sites-available/pontaj-admin.conf
+chmod +x setup_proxy.sh
+./setup_proxy.sh
 ```
 
-Paste the contents from `nginx-reverse-proxy.conf` (included in this repo).
+The script will:
+- Find the correct Nginx directory (`sites-available` or `conf.d`)
+- Create the configuration
+- Test and reload Nginx
+- Check if your DNS is working
+- Offer to run Certbot for SSL
 
-#### Step 3: Enable the Site
-
-```bash
-# Create symlink
-sudo ln -s /etc/nginx/sites-available/pontaj-admin.conf /etc/nginx/sites-enabled/
-
-# Test configuration
-sudo nginx -t
-
-# Reload nginx
-sudo systemctl reload nginx
-```
+### Option 2: Manual Setup (If script fails)
 
 #### Step 4: Set Up SSL with Let's Encrypt
 
@@ -47,14 +36,14 @@ sudo systemctl reload nginx
 sudo apt install certbot python3-certbot-nginx
 
 # Get SSL certificate
-sudo certbot --nginx -d pontaj.binarysquad.club
+sudo certbot --nginx -d adminpontaj.binarysquad.club
 
 # Certbot will automatically configure HTTPS
 ```
 
 After this, your app will be accessible at:
-- **HTTP**: `http://pontaj.binarysquad.club` (redirects to HTTPS)
-- **HTTPS**: `https://pontaj.binarysquad.club`
+- **HTTP**: `http://adminpontaj.binarysquad.club` (redirects to HTTPS)
+- **HTTPS**: `https://adminpontaj.binarysquad.club`
 
 ---
 
@@ -121,6 +110,27 @@ docker logs pontaj-admin-web
 # Restart
 docker-compose restart
 ```
+
+### "Directory not found" when creating config
+If `/etc/nginx/sites-available/` does not exist, your Nginx installation might use `conf.d`. Try this instead:
+
+```bash
+# Check if conf.d exists
+ls -d /etc/nginx/conf.d/
+
+# If yes, create config there directly (no symlink needed)
+sudo nano /etc/nginx/conf.d/pontaj-admin.conf
+```
+
+### Certbot fails or "Non-existent domain"
+**CRITICAL**: You MUST add the DNS record before running Certbot.
+1. Go to your domain provider (Namecheap, GoDaddy, Cloudflare, etc.)
+2. Add an **A Record**:
+   - Host/Name: `adminpontaj`
+   - Value: `YOUR_SERVER_IP`
+3. Wait 5-10 minutes
+4. Verify it works: `ping adminpontaj.binarysquad.club`
+5. ONLY THEN run Certbot
 
 ### Nginx errors
 ```bash
