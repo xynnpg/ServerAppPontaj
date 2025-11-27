@@ -1,0 +1,45 @@
+# Build artifacts
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# IDE and editor files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Platform-specific directories (not needed for web)
+android/
+ios/
+windows/
+linux/
+macos/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation and misc
+*.md
+!README.md
+!DEPLOYMENT.md
+LICENSE
+.metadata
+
+# Test files
+test/
+coverage/
+
+# Local development files
+*.log
+.DS_Store
+*.swp
+*.swo
+
+# Environment files (if any)
+.env
+.env.local
