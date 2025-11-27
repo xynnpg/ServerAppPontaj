@@ -11,10 +11,10 @@
    git pull
    ```
 
-2. **Restart the container**:
+2. **Run the deployment script**:
    ```bash
-   docker-compose down
-   docker-compose up -d
+   chmod +x run_docker.sh
+   ./run_docker.sh
    ```
 
 3. **Verify it's running**:
@@ -38,8 +38,17 @@ sudo firewall-cmd --permanent --add-port=24364/tcp
 sudo firewall-cmd --reload
 ```
 
-### "Port already in use"
-If Docker fails to start, check if something else is using port 24364:
+### "KeyError: 'ContainerConfig'" or Docker Compose Errors
+If `docker-compose` fails with obscure errors, use plain Docker commands:
+
 ```bash
-sudo lsof -i :24364
+# 1. Stop and remove old container
+docker stop pontaj-admin-web
+docker rm pontaj-admin-web
+
+# 2. Build image manually
+docker build -t pontaj-admin .
+
+# 3. Run container manually
+docker run -d --name pontaj-admin-web -p 24364:80 --restart unless-stopped pontaj-admin
 ```
