@@ -7,9 +7,8 @@ services:
       dockerfile: Dockerfile
     container_name: pontaj-admin-web
     ports:
-      # Map container port 80 to host port 8080
-      # Change 8080 to any port you prefer on your server
-      - "8080:80"
+      # Map container port 80 to host port 24364
+      - "24364:80"
     restart: unless-stopped
     # Optional: Add environment variables here if needed
     # environment:

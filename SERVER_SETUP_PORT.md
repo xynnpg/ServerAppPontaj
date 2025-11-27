@@ -1,0 +1,45 @@
+# Server Setup Instructions (Port Access)
+
+## Current Configuration
+✅ **Port**: 24364
+✅ **Access URL**: `http://binarysquad.club:24364` (or `http://YOUR_SERVER_IP:24364`)
+
+## How to Deploy
+
+1. **Pull the latest changes**:
+   ```bash
+   git pull
+   ```
+
+2. **Restart the container**:
+   ```bash
+   docker-compose down
+   docker-compose up -d
+   ```
+
+3. **Verify it's running**:
+   ```bash
+   docker ps
+   ```
+   You should see `0.0.0.0:24364->80/tcp`.
+
+## Troubleshooting
+
+### "Site can't be reached"
+If you cannot access the site, the port might be blocked by your firewall.
+
+**Open the port:**
+```bash
+# If using UFW (Ubuntu/Debian)
+sudo ufw allow 24364/tcp
+
+# If using Firewalld (CentOS/RHEL)
+sudo firewall-cmd --permanent --add-port=24364/tcp
+sudo firewall-cmd --reload
+```
+
+### "Port already in use"
+If Docker fails to start, check if something else is using port 24364:
+```bash
+sudo lsof -i :24364
+```

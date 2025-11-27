@@ -23,7 +23,7 @@ cd pontaj_admin
 docker-compose up -d
 ```
 
-The application will be available at `http://localhost:8080`
+The application will be available at `http://localhost:24364`
 
 ### 3. Stop the Application
 
