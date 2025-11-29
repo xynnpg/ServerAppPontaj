@@ -5,6 +5,7 @@ import '../models/professor.dart';
 import '../services/admin_service.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
+import 'debug_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   final String token;
@@ -21,7 +22,7 @@ class AdminDashboardScreen extends StatefulWidget {
 }
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final _adminService = AdminService();
   final _authService = AuthService();
   late Future<AdminListResponse> _adminsFuture;
@@ -31,6 +32,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _refreshList();
     _fabController = AnimationController(
       vsync: this,
@@ -45,14 +47,36 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _fabController.dispose();
     super.dispose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshList();
+    }
+  }
+
   void _refreshList() {
     setState(() {
-      _adminsFuture = _adminService.getProfessors(widget.token);
+      _adminsFuture = _fetchAdmins();
     });
+  }
+
+  Future<AdminListResponse> _fetchAdmins() async {
+    try {
+      return await _adminService.getProfessors(widget.token);
+    } catch (e) {
+      if (e.toString().contains('401')) {
+        // Token expired or invalid
+        if (mounted) {
+          _handleLogout();
+        }
+      }
+      rethrow;
+    }
   }
 
   Future<void> _showProfessorDialog({Professor? professor}) async {
@@ -124,9 +148,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                         TextFormField(
                           controller: passwordController,
                           decoration: InputDecoration(
-                            labelText: isEditing
-                                ? 'New Password (optional)'
-                                : 'Password',
+                            labelText: isEditing ? 'New Password' : 'Password',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -176,7 +198,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                                   if (isEditing) {
                                     await _adminService.updateProfessor(
                                       widget.token,
-                                      professor.id!,
+                                      professor.id,
                                       nameController.text,
                                       emailController.text,
                                       passwordController.text,
@@ -192,25 +214,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                                   if (mounted) {
                                     Navigator.pop(context);
                                     _refreshList();
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          isEditing
-                                              ? 'Updated successfully'
-                                              : 'Added successfully',
-                                        ),
-                                      ),
-                                    );
                                   }
                                 } catch (e) {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Error: $e'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
+                                  // Error is already logged by ErrorService
                                 } finally {
                                   if (mounted)
                                     setState(() => isLoading = false);
@@ -230,8 +236,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   }
 
   Future<void> _deleteProfessor(Professor professor) async {
-    if (professor.id == null) return;
-
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -253,19 +257,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
 
     if (confirm == true) {
       try {
-        await _adminService.deleteProfessor(widget.token, professor.id!);
+        await _adminService.deleteProfessor(widget.token, professor.id);
         _refreshList();
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Deleted successfully')));
-        }
+        // Success - refresh the list
       } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-          );
-        }
+        // Error is already logged by ErrorService
       }
     }
   }
@@ -331,8 +327,36 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                   centerTitle: false,
                 ),
                 actions: [
+                  IconButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const DebugScreen(),
+                        ),
+                      );
+                    },
+                    icon: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.bug_report,
+                        size: 20,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
                   Padding(
-                    padding: const EdgeInsets.only(right: 16.0),
+                    padding: const EdgeInsets.only(right: 16.0, left: 8.0),
                     child: IconButton(
                       onPressed: _handleLogout,
                       icon: Container(
