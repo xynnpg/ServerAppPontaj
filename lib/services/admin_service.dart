@@ -19,8 +19,18 @@ class AdminService {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
+        ErrorService().showError(
+          'GET /admin/profesori - Success',
+          input: 'GET /admin/profesori',
+          output: 'Status: ${response.statusCode}, Count: ${data['count']}',
+        );
         return AdminListResponse.fromJson(data);
       } else {
+        ErrorService().showError(
+          'GET /admin/profesori - Failed',
+          input: 'GET /admin/profesori',
+          output: 'Status: ${response.statusCode}, Body: ${response.body}',
+        );
         throw Exception(
           'Failed to load professors: ${response.statusCode} ${response.body}',
         );

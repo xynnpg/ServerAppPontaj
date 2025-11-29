@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../services/error_service.dart';
 
@@ -11,81 +12,272 @@ class DebugScreen extends StatefulWidget {
 
 class _DebugScreenState extends State<DebugScreen> {
   final _errorService = ErrorService();
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+  String _filterType = 'all'; // all, input, output, stacktrace
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<ErrorLog> get _filteredLogs {
+    var logs = _errorService.errorLogs;
+
+    // Apply search filter
+    if (_searchQuery.isNotEmpty) {
+      logs = logs.where((log) {
+        return log.message.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            (log.input?.toLowerCase().contains(_searchQuery.toLowerCase()) ??
+                false) ||
+            (log.output?.toLowerCase().contains(_searchQuery.toLowerCase()) ??
+                false);
+      }).toList();
+    }
+
+    // Apply type filter
+    if (_filterType != 'all') {
+      logs = logs.where((log) {
+        switch (_filterType) {
+          case 'input':
+            return log.input != null;
+          case 'output':
+            return log.output != null;
+          case 'stacktrace':
+            return log.stackTrace != null;
+          default:
+            return true;
+        }
+      }).toList();
+    }
+
+    return logs;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final logs = _errorService.errorLogs;
+    final logs = _filteredLogs;
+    final totalLogs = _errorService.errorLogs.length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F2F7),
       appBar: AppBar(
         title: const Text('Debug Console'),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0,
         actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '$totalLogs Logs',
+              style: TextStyle(
+                color: Theme.of(context).primaryColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ),
           IconButton(
-            icon: const Icon(Icons.delete_outline),
+            icon: const Icon(Icons.delete_sweep),
             onPressed: () {
-              setState(() {
-                _errorService.clearLogs();
-              });
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('Logs cleared')));
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Clear Logs'),
+                  content: const Text(
+                    'Are you sure you want to clear all logs?',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() => _errorService.clearLogs());
+                        Navigator.pop(context);
+                      },
+                      child: const Text(
+                        'Clear',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              );
             },
             tooltip: 'Clear all logs',
           ),
         ],
       ),
-      body: logs.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.check_circle_outline,
-                    size: 64,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No errors logged',
-                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: logs.length,
-              itemBuilder: (context, index) {
-                final log = logs[logs.length - 1 - index]; // Reverse order
-                return _buildLogCard(log, index);
-              },
-            ),
+      body: Column(
+        children: [
+          _buildSearchAndFilters(),
+          Expanded(
+            child: logs.isEmpty ? _buildEmptyState() : _buildLogsList(logs),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildLogCard(ErrorLog log, int index) {
-    final formatter = DateFormat('HH:mm:ss');
+  Widget _buildSearchAndFilters() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: Colors.white,
+      child: Column(
+        children: [
+          // Search bar
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search logs...',
+                hintStyle: TextStyle(color: Colors.grey[400]),
+                prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.clear, color: Colors.grey[600]),
+                        onPressed: () {
+                          setState(() {
+                            _searchController.clear();
+                            _searchQuery = '';
+                          });
+                        },
+                      )
+                    : null,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+              ),
+              onChanged: (value) {
+                setState(() => _searchQuery = value);
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Filter chips
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildFilterChip('All', 'all'),
+                _buildFilterChip('With Input', 'input'),
+                _buildFilterChip('With Output', 'output'),
+                _buildFilterChip('Stack Traces', 'stacktrace'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 2,
+  Widget _buildFilterChip(String label, String value) {
+    final isSelected = _filterType == value;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        label: Text(label),
+        selected: isSelected,
+        onSelected: (selected) {
+          setState(() => _filterType = value);
+        },
+        backgroundColor: Colors.grey[100],
+        selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
+        checkmarkColor: Theme.of(context).primaryColor,
+        labelStyle: TextStyle(
+          color: isSelected ? Theme.of(context).primaryColor : Colors.grey[700],
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          fontSize: 12,
+        ),
+        side: BorderSide(
+          color: isSelected
+              ? Theme.of(context).primaryColor
+              : Colors.grey[300]!,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.check_circle_outline, size: 64, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text(
+            _searchQuery.isNotEmpty || _filterType != 'all'
+                ? 'No logs match your filters'
+                : 'No logs yet',
+            style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLogsList(List<ErrorLog> logs) {
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      itemCount: logs.length,
+      itemBuilder: (context, index) {
+        final log = logs[logs.length - 1 - index];
+        return _buildLogCard(log);
+      },
+    );
+  }
+
+  Widget _buildLogCard(ErrorLog log) {
+    final formatter = DateFormat('MMM dd, HH:mm:ss');
+    final isError =
+        log.message.toLowerCase().contains('error') ||
+        log.message.toLowerCase().contains('failed');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          childrenPadding: const EdgeInsets.all(16),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           leading: Container(
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: Colors.red.shade50,
+              color: isError ? Colors.red.shade50 : Colors.green.shade50,
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.error_outline, color: Colors.red.shade700),
+            child: Icon(
+              isError ? Icons.error_outline : Icons.check_circle_outline,
+              color: isError ? Colors.red[700] : Colors.green[700],
+              size: 20,
+            ),
           ),
           title: Text(
             log.message,
@@ -94,10 +286,78 @@ class _DebugScreenState extends State<DebugScreen> {
             overflow: TextOverflow.ellipsis,
           ),
           subtitle: Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              formatter.format(log.timestamp),
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            padding: const EdgeInsets.only(top: 6),
+            child: Row(
+              children: [
+                Icon(Icons.access_time, size: 12, color: Colors.grey[500]),
+                const SizedBox(width: 4),
+                Text(
+                  formatter.format(log.timestamp),
+                  style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                ),
+                const SizedBox(width: 12),
+                if (log.input != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'INPUT',
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: Colors.blue[700],
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                if (log.output != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'OUTPUT',
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: Colors.orange[700],
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                if (log.stackTrace != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.shade50,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'TRACE',
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: Colors.purple[700],
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
           children: [
@@ -109,7 +369,11 @@ class _DebugScreenState extends State<DebugScreen> {
               _buildDetailSection('Output', log.output!, Colors.orange),
               const SizedBox(height: 12),
             ],
-            _buildDetailSection('Full Message', log.message, Colors.red),
+            _buildDetailSection(
+              'Full Message',
+              log.message,
+              isError ? Colors.red : Colors.green,
+            ),
             if (log.stackTrace != null) ...[
               const SizedBox(height: 12),
               _buildDetailSection(
@@ -127,7 +391,6 @@ class _DebugScreenState extends State<DebugScreen> {
   Widget _buildDetailSection(String title, String content, Color color) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: color.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
@@ -136,33 +399,57 @@ class _DebugScreenState extends State<DebugScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Text(
                   title,
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: _getShade700(color),
-                    letterSpacing: 0.5,
+                    color: _getDarkerColor(color),
                   ),
                 ),
-              ),
-            ],
+                const Spacer(),
+                InkWell(
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: content));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('$title copied'),
+                        duration: const Duration(seconds: 1),
+                      ),
+                    );
+                  },
+                  child: Icon(
+                    Icons.copy,
+                    size: 14,
+                    color: _getDarkerColor(color),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
-          SelectableText(
-            content,
-            style: TextStyle(
-              fontSize: 12,
-              fontFamily: 'monospace',
-              color: Colors.grey[800],
+          Container(
+            padding: const EdgeInsets.all(12),
+            constraints: const BoxConstraints(maxHeight: 300),
+            child: SingleChildScrollView(
+              child: SelectableText(
+                content,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontFamily: 'Courier',
+                  height: 1.4,
+                ),
+              ),
             ),
           ),
         ],
@@ -170,8 +457,7 @@ class _DebugScreenState extends State<DebugScreen> {
     );
   }
 
-  Color _getShade700(Color color) {
-    // Create a darker version of the color
+  Color _getDarkerColor(Color color) {
     return Color.fromRGBO(
       (color.red * 0.7).round(),
       (color.green * 0.7).round(),
