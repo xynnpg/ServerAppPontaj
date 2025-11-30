@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../models/professor.dart';
@@ -6,6 +7,7 @@ import '../services/admin_service.dart';
 import '../services/auth_service.dart';
 import '../services/error_service.dart';
 import '../utils/csv_downloader.dart';
+import '../utils/apk_downloader.dart';
 import 'login_screen.dart';
 import 'debug_screen.dart';
 
@@ -98,6 +100,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
 
     downloadCsvFile(buffer.toString(), 'professors_stats.csv');
     ErrorService().showSuccess('Stats exported to CSV successfully');
+  }
+
+  void _downloadApk() {
+    downloadApk();
   }
 
   Future<void> _showProfessorDialog({Professor? professor}) async {
@@ -348,38 +354,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                   centerTitle: false,
                 ),
                 actions: [
-                  IconButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const DebugScreen(),
-                        ),
-                      );
-                    },
-                    icon: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.bug_report,
-                        size: 20,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8.0),
-                    child: IconButton(
-                      onPressed: _downloadCsv,
+                  if (kIsWeb)
+                    IconButton(
+                      onPressed: _downloadApk,
                       icon: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
@@ -394,18 +371,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                           ],
                         ),
                         child: const Icon(
-                          Icons.download_rounded,
+                          Icons.android,
                           size: 20,
                           color: Colors.black87,
                         ),
                       ),
-                      tooltip: 'Download CSV',
+                      tooltip: 'Download APK',
                     ),
-                  ),
                   Padding(
                     padding: const EdgeInsets.only(right: 16.0, left: 8.0),
-                    child: IconButton(
-                      onPressed: _handleLogout,
+                    child: PopupMenuButton<String>(
                       icon: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
@@ -420,11 +395,67 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                           ],
                         ),
                         child: const Icon(
-                          Icons.logout,
+                          Icons.menu,
                           size: 20,
                           color: Colors.black87,
                         ),
                       ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      onSelected: (value) {
+                        switch (value) {
+                          case 'debug':
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const DebugScreen(),
+                              ),
+                            );
+                            break;
+                          case 'csv':
+                            _downloadCsv();
+                            break;
+                          case 'logout':
+                            _handleLogout();
+                            break;
+                        }
+                      },
+                      itemBuilder: (BuildContext context) => [
+                        const PopupMenuItem<String>(
+                          value: 'debug',
+                          child: Row(
+                            children: [
+                              Icon(Icons.bug_report, size: 20),
+                              SizedBox(width: 12),
+                              Text('Debug Console'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem<String>(
+                          value: 'csv',
+                          child: Row(
+                            children: [
+                              Icon(Icons.download_rounded, size: 20),
+                              SizedBox(width: 12),
+                              Text('Download CSV'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuDivider(),
+                        const PopupMenuItem<String>(
+                          value: 'logout',
+                          child: Row(
+                            children: [
+                              Icon(Icons.logout, size: 20, color: Colors.red),
+                              SizedBox(width: 12),
+                              Text(
+                                'Logout',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
