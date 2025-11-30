@@ -1,5 +1,14 @@
 import 'dart:async';
 
+enum NotificationType { error, success, info }
+
+class NotificationEvent {
+  final String message;
+  final NotificationType type;
+
+  NotificationEvent({required this.message, required this.type});
+}
+
 class ErrorLog {
   final String message;
   final DateTime timestamp;
@@ -21,14 +30,23 @@ class ErrorService {
   factory ErrorService() => _instance;
   ErrorService._internal();
 
-  final _errorController = StreamController<String>.broadcast();
-  Stream<String> get errorStream => _errorController.stream;
+  final _notificationController =
+      StreamController<NotificationEvent>.broadcast();
+  Stream<NotificationEvent> get notificationStream =>
+      _notificationController.stream;
 
   final List<ErrorLog> _errorLogs = [];
   List<ErrorLog> get errorLogs => List.unmodifiable(_errorLogs);
 
   void logInfo(String message, {String? input, String? output}) {
-    showError(message, input: input, output: output, notifyUser: false);
+    // Log info but don't show error notification by default
+    final log = ErrorLog(
+      message: message,
+      timestamp: DateTime.now(),
+      input: input,
+      output: output,
+    );
+    _errorLogs.add(log);
   }
 
   void showError(
@@ -49,8 +67,19 @@ class ErrorService {
     _errorLogs.add(log);
 
     if (notifyUser) {
-      _errorController.add(notificationMessage ?? message);
+      _notificationController.add(
+        NotificationEvent(
+          message: notificationMessage ?? message,
+          type: NotificationType.error,
+        ),
+      );
     }
+  }
+
+  void showSuccess(String message) {
+    _notificationController.add(
+      NotificationEvent(message: message, type: NotificationType.success),
+    );
   }
 
   void clearLogs() {
@@ -58,6 +87,6 @@ class ErrorService {
   }
 
   void dispose() {
-    _errorController.close();
+    _notificationController.close();
   }
 }

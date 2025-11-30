@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../models/professor.dart';
 import '../services/admin_service.dart';
 import '../services/auth_service.dart';
+import '../services/error_service.dart';
+import '../utils/csv_downloader.dart';
 import 'login_screen.dart';
 import 'debug_screen.dart';
 
@@ -28,6 +30,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   late Future<AdminListResponse> _adminsFuture;
   late AnimationController _fabController;
   late Animation<double> _fabAnimation;
+  List<Professor> _currentAdmins = [];
 
   @override
   void initState() {
@@ -67,7 +70,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
 
   Future<AdminListResponse> _fetchAdmins() async {
     try {
-      return await _adminService.getProfessors(widget.token);
+      final response = await _adminService.getProfessors(widget.token);
+      _currentAdmins = response.admins;
+      return response;
     } catch (e) {
       if (e.toString().contains('401')) {
         // Token expired or invalid
@@ -77,6 +82,22 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       }
       rethrow;
     }
+  }
+
+  void _downloadCsv() {
+    if (_currentAdmins.isEmpty) {
+      ErrorService().showError('No data to export');
+      return;
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('ID,Name,Email');
+    for (var p in _currentAdmins) {
+      buffer.writeln('${p.id},"${p.name}","${p.email}"');
+    }
+
+    downloadCsvFile(buffer.toString(), 'professors_stats.csv');
+    ErrorService().showSuccess('Stats exported to CSV successfully');
   }
 
   Future<void> _showProfessorDialog({Professor? professor}) async {
@@ -356,6 +377,32 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                     ),
                   ),
                   Padding(
+                    padding: const EdgeInsets.only(left: 8.0),
+                    child: IconButton(
+                      onPressed: _downloadCsv,
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.download_rounded,
+                          size: 20,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      tooltip: 'Download CSV',
+                    ),
+                  ),
+                  Padding(
                     padding: const EdgeInsets.only(right: 16.0, left: 8.0),
                     child: IconButton(
                       onPressed: _handleLogout,
@@ -382,6 +429,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                   ),
                 ],
               ),
+
               if (isLoading)
                 const SliverFillRemaining(
                   child: Center(child: CircularProgressIndicator()),

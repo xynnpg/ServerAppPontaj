@@ -14,7 +14,7 @@ class ErrorOverlay extends StatefulWidget {
 class _ErrorOverlayState extends State<ErrorOverlay>
     with SingleTickerProviderStateMixin {
   final _errorService = ErrorService();
-  String? _currentError;
+  NotificationEvent? _currentNotification;
   Timer? _dismissTimer;
   late AnimationController _controller;
   late Animation<Offset> _slideAnimation;
@@ -31,13 +31,13 @@ class _ErrorOverlayState extends State<ErrorOverlay>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
-    _errorService.errorStream.listen(_showError);
+    _errorService.notificationStream.listen(_showNotification);
   }
 
-  void _showError(String message) {
+  void _showNotification(NotificationEvent event) {
     _dismissTimer?.cancel();
     setState(() {
-      _currentError = message;
+      _currentNotification = event;
     });
     _controller.forward();
 
@@ -50,7 +50,7 @@ class _ErrorOverlayState extends State<ErrorOverlay>
     await _controller.reverse();
     if (mounted) {
       setState(() {
-        _currentError = null;
+        _currentNotification = null;
       });
     }
   }
@@ -62,13 +62,68 @@ class _ErrorOverlayState extends State<ErrorOverlay>
     super.dispose();
   }
 
+  Color _getBackgroundColor(NotificationType type) {
+    switch (type) {
+      case NotificationType.error:
+        return Colors.red.shade50;
+      case NotificationType.success:
+        return Colors.green.shade50;
+      case NotificationType.info:
+        return Colors.blue.shade50;
+    }
+  }
+
+  Color _getBorderColor(NotificationType type) {
+    switch (type) {
+      case NotificationType.error:
+        return Colors.red.shade200;
+      case NotificationType.success:
+        return Colors.green.shade200;
+      case NotificationType.info:
+        return Colors.blue.shade200;
+    }
+  }
+
+  Color _getIconColor(NotificationType type) {
+    switch (type) {
+      case NotificationType.error:
+        return Colors.red.shade700;
+      case NotificationType.success:
+        return Colors.green.shade700;
+      case NotificationType.info:
+        return Colors.blue.shade700;
+    }
+  }
+
+  Color _getTextColor(NotificationType type) {
+    switch (type) {
+      case NotificationType.error:
+        return Colors.red.shade900;
+      case NotificationType.success:
+        return Colors.green.shade900;
+      case NotificationType.info:
+        return Colors.blue.shade900;
+    }
+  }
+
+  IconData _getIcon(NotificationType type) {
+    switch (type) {
+      case NotificationType.error:
+        return Icons.error_outline;
+      case NotificationType.success:
+        return Icons.check_circle_outline;
+      case NotificationType.info:
+        return Icons.info_outline;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
       textDirection: TextDirection.ltr,
       children: [
         widget.child,
-        if (_currentError != null)
+        if (_currentNotification != null)
           Positioned(
             top: MediaQuery.of(context).padding.top + 10,
             left: 20,
@@ -83,9 +138,11 @@ class _ErrorOverlayState extends State<ErrorOverlay>
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade50,
+                    color: _getBackgroundColor(_currentNotification!.type),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.red.shade200),
+                    border: Border.all(
+                      color: _getBorderColor(_currentNotification!.type),
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.1),
@@ -96,13 +153,16 @@ class _ErrorOverlayState extends State<ErrorOverlay>
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.error_outline, color: Colors.red.shade700),
+                      Icon(
+                        _getIcon(_currentNotification!.type),
+                        color: _getIconColor(_currentNotification!.type),
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          _currentError!,
+                          _currentNotification!.message,
                           style: TextStyle(
-                            color: Colors.red.shade900,
+                            color: _getTextColor(_currentNotification!.type),
                             fontWeight: FontWeight.w500,
                             fontSize: 14,
                           ),
@@ -112,7 +172,7 @@ class _ErrorOverlayState extends State<ErrorOverlay>
                         icon: Icon(
                           Icons.close,
                           size: 20,
-                          color: Colors.red.shade700,
+                          color: _getIconColor(_currentNotification!.type),
                         ),
                         onPressed: _dismiss,
                         padding: EdgeInsets.zero,
