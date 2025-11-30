@@ -19,7 +19,7 @@ class AdminService {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
-        ErrorService().showError(
+        ErrorService().logInfo(
           'GET /admin/profesori - Success',
           input: 'GET /admin/profesori',
           output: 'Status: ${response.statusCode}, Count: ${data['count']}',
@@ -30,6 +30,7 @@ class AdminService {
           'GET /admin/profesori - Failed',
           input: 'GET /admin/profesori',
           output: 'Status: ${response.statusCode}, Body: ${response.body}',
+          notificationMessage: 'Server Error',
         );
         throw Exception(
           'Failed to load professors: ${response.statusCode} ${response.body}',
@@ -37,7 +38,10 @@ class AdminService {
       }
     } catch (e) {
       if (!e.toString().contains('401')) {
-        ErrorService().showError('Error fetching professors: $e');
+        ErrorService().showError(
+          'Error fetching professors: $e',
+          notificationMessage: 'Server Error',
+        );
       }
       throw Exception('Error fetching professors: $e');
     }
@@ -70,7 +74,10 @@ class AdminService {
         );
       }
     } catch (e) {
-      ErrorService().showError('Error adding professor: $e');
+      ErrorService().showError(
+        'Error adding professor: $e',
+        notificationMessage: 'Server Error',
+      );
       throw Exception('Error adding professor: $e');
     }
   }
@@ -91,7 +98,10 @@ class AdminService {
         );
       }
     } catch (e) {
-      ErrorService().showError('Error deleting professor: $e');
+      ErrorService().showError(
+        'Error deleting professor: $e',
+        notificationMessage: 'Server Error',
+      );
       throw Exception('Error deleting professor: $e');
     }
   }
@@ -137,7 +147,10 @@ class AdminService {
         );
       }
     } catch (e) {
-      ErrorService().showError('Error updating professor: $e');
+      ErrorService().showError(
+        'Error updating professor: $e',
+        notificationMessage: 'Server Error',
+      );
       throw Exception('$e');
     }
   }

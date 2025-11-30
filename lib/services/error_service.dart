@@ -27,11 +27,17 @@ class ErrorService {
   final List<ErrorLog> _errorLogs = [];
   List<ErrorLog> get errorLogs => List.unmodifiable(_errorLogs);
 
+  void logInfo(String message, {String? input, String? output}) {
+    showError(message, input: input, output: output, notifyUser: false);
+  }
+
   void showError(
     String message, {
     String? input,
     String? output,
     StackTrace? stackTrace,
+    bool notifyUser = true,
+    String? notificationMessage,
   }) {
     final log = ErrorLog(
       message: message,
@@ -41,7 +47,10 @@ class ErrorService {
       stackTrace: stackTrace,
     );
     _errorLogs.add(log);
-    _errorController.add(message);
+
+    if (notifyUser) {
+      _errorController.add(notificationMessage ?? message);
+    }
   }
 
   void clearLogs() {
