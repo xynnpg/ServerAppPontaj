@@ -472,7 +472,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildChartsSection(),
+                        _buildChartsSection(admins),
                         const SizedBox(height: 32),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -637,7 +637,23 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     );
   }
 
-  Widget _buildChartsSection() {
+  Widget _buildChartsSection(List<Professor> admins) {
+    // Prepare data for Activity Overview (using IDs as proxy for timeline)
+    // We'll take the last 10 admins to show recent "activity"
+    final recentAdmins = admins.length > 10
+        ? admins.sublist(admins.length - 10)
+        : admins;
+
+    final List<FlSpot> spots = [];
+    for (int i = 0; i < recentAdmins.length; i++) {
+      spots.add(FlSpot(i.toDouble(), recentAdmins[i].id.toDouble()));
+    }
+
+    // If no data, add some placeholders to avoid crash/empty chart
+    if (spots.isEmpty) {
+      spots.add(const FlSpot(0, 0));
+    }
+
     return Center(
       child: Container(
         constraints: const BoxConstraints(maxWidth: 1000),
@@ -648,25 +664,30 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
           shrinkWrap: true,
           children: [
             _buildChartCard(
-              title: 'Activity Overview',
+              title: 'ID Growth (Activity)',
               width: 400,
               child: LineChart(
                 LineChartData(
                   gridData: const FlGridData(show: false),
                   titlesData: const FlTitlesData(show: false),
                   borderData: FlBorderData(show: false),
-                  lineTouchData: const LineTouchData(enabled: true),
+                  lineTouchData: LineTouchData(
+                    enabled: true,
+                    touchTooltipData: LineTouchTooltipData(
+                      tooltipBgColor: Colors.black87,
+                      getTooltipItems: (touchedSpots) {
+                        return touchedSpots.map((spot) {
+                          return LineTooltipItem(
+                            'ID: ${spot.y.toInt()}',
+                            const TextStyle(color: Colors.white),
+                          );
+                        }).toList();
+                      },
+                    ),
+                  ),
                   lineBarsData: [
                     LineChartBarData(
-                      spots: const [
-                        FlSpot(0, 3),
-                        FlSpot(1, 1),
-                        FlSpot(2, 4),
-                        FlSpot(3, 2),
-                        FlSpot(4, 5),
-                        FlSpot(5, 3),
-                        FlSpot(6, 4),
-                      ],
+                      spots: spots,
                       isCurved: true,
                       curveSmoothness: 0.4,
                       color: Theme.of(context).primaryColor,
@@ -698,19 +719,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                 children: [
                   PieChart(
                     PieChartData(
-                      sectionsSpace: 4,
+                      sectionsSpace: 0,
                       centerSpaceRadius: 40,
                       startDegreeOffset: -90,
                       sections: [
                         PieChartSectionData(
                           color: Theme.of(context).primaryColor,
-                          value: 75,
-                          showTitle: false,
-                          radius: 15,
-                        ),
-                        PieChartSectionData(
-                          color: Colors.grey[200],
-                          value: 25,
+                          value: 100,
                           showTitle: false,
                           radius: 15,
                         ),
@@ -721,7 +736,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '75%',
+                        '${admins.length}',
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -729,7 +744,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                         ),
                       ),
                       Text(
-                        'Active',
+                        'Professors',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[600],
