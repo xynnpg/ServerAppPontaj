@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:pontaj_admin/l10n/app_localizations.dart';
 import '../services/error_service.dart';
 
 class DebugScreen extends StatefulWidget {
@@ -57,13 +58,14 @@ class _DebugScreenState extends State<DebugScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final logs = _filteredLogs;
     final totalLogs = _errorService.errorLogs.length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F2F7),
       appBar: AppBar(
-        title: const Text('Debug Console'),
+        title: Text(l10n.debugConsole),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0,
@@ -76,7 +78,7 @@ class _DebugScreenState extends State<DebugScreen> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              '$totalLogs Logs',
+              '$totalLogs ${l10n.logs}',
               style: TextStyle(
                 color: Theme.of(context).primaryColor,
                 fontWeight: FontWeight.bold,
@@ -90,30 +92,28 @@ class _DebugScreenState extends State<DebugScreen> {
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Clear Logs'),
-                  content: const Text(
-                    'Are you sure you want to clear all logs?',
-                  ),
+                  title: Text(l10n.clearLogs),
+                  content: Text(l10n.clearLogsConfirmation),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
+                      child: Text(l10n.cancel),
                     ),
                     TextButton(
                       onPressed: () {
                         setState(() => _errorService.clearLogs());
                         Navigator.pop(context);
                       },
-                      child: const Text(
-                        'Clear',
-                        style: TextStyle(color: Colors.red),
+                      child: Text(
+                        l10n.clear,
+                        style: const TextStyle(color: Colors.red),
                       ),
                     ),
                   ],
                 ),
               );
             },
-            tooltip: 'Clear all logs',
+            tooltip: l10n.clearLogs,
           ),
         ],
       ),
@@ -129,6 +129,7 @@ class _DebugScreenState extends State<DebugScreen> {
   }
 
   Widget _buildSearchAndFilters() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(16),
       color: Colors.white,
@@ -143,7 +144,7 @@ class _DebugScreenState extends State<DebugScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search logs...',
+                hintText: l10n.searchLogs,
                 hintStyle: TextStyle(color: Colors.grey[400]),
                 prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
                 suffixIcon: _searchQuery.isNotEmpty
@@ -174,10 +175,10 @@ class _DebugScreenState extends State<DebugScreen> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildFilterChip('All', 'all'),
-                _buildFilterChip('With Input', 'input'),
-                _buildFilterChip('With Output', 'output'),
-                _buildFilterChip('Stack Traces', 'stacktrace'),
+                _buildFilterChip(l10n.all, 'all'),
+                _buildFilterChip(l10n.withInput, 'input'),
+                _buildFilterChip(l10n.withOutput, 'output'),
+                _buildFilterChip(l10n.stackTraces, 'stacktrace'),
               ],
             ),
           ),
@@ -214,6 +215,7 @@ class _DebugScreenState extends State<DebugScreen> {
   }
 
   Widget _buildEmptyState() {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -222,8 +224,8 @@ class _DebugScreenState extends State<DebugScreen> {
           const SizedBox(height: 16),
           Text(
             _searchQuery.isNotEmpty || _filterType != 'all'
-                ? 'No logs match your filters'
-                : 'No logs yet',
+                ? l10n.noLogsMatch
+                : l10n.noLogsYet,
             style: TextStyle(fontSize: 18, color: Colors.grey[600]),
           ),
         ],
@@ -243,6 +245,7 @@ class _DebugScreenState extends State<DebugScreen> {
   }
 
   Widget _buildLogCard(ErrorLog log) {
+    final l10n = AppLocalizations.of(context)!;
     final formatter = DateFormat('MMM dd, HH:mm:ss');
     final isError =
         log.message.toLowerCase().contains('error') ||
@@ -307,7 +310,7 @@ class _DebugScreenState extends State<DebugScreen> {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      'INPUT',
+                      l10n.input.toUpperCase(),
                       style: TextStyle(
                         fontSize: 9,
                         color: Colors.blue[700],
@@ -328,7 +331,7 @@ class _DebugScreenState extends State<DebugScreen> {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      'OUTPUT',
+                      l10n.output.toUpperCase(),
                       style: TextStyle(
                         fontSize: 9,
                         color: Colors.orange[700],
@@ -349,7 +352,7 @@ class _DebugScreenState extends State<DebugScreen> {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      'TRACE',
+                      l10n.trace,
                       style: TextStyle(
                         fontSize: 9,
                         color: Colors.purple[700],
@@ -362,22 +365,22 @@ class _DebugScreenState extends State<DebugScreen> {
           ),
           children: [
             if (log.input != null) ...[
-              _buildDetailSection('Input', log.input!, Colors.blue),
+              _buildDetailSection(l10n.input, log.input!, Colors.blue),
               const SizedBox(height: 12),
             ],
             if (log.output != null) ...[
-              _buildDetailSection('Output', log.output!, Colors.orange),
+              _buildDetailSection(l10n.output, log.output!, Colors.orange),
               const SizedBox(height: 12),
             ],
             _buildDetailSection(
-              'Full Message',
+              l10n.fullMessage,
               log.message,
               isError ? Colors.red : Colors.green,
             ),
             if (log.stackTrace != null) ...[
               const SizedBox(height: 12),
               _buildDetailSection(
-                'Stack Trace',
+                l10n.stackTrace,
                 log.stackTrace.toString(),
                 Colors.purple,
               ),
@@ -389,6 +392,7 @@ class _DebugScreenState extends State<DebugScreen> {
   }
 
   Widget _buildDetailSection(String title, String content, Color color) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -424,7 +428,7 @@ class _DebugScreenState extends State<DebugScreen> {
                     Clipboard.setData(ClipboardData(text: content));
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('$title copied'),
+                        content: Text(l10n.copied(title)),
                         duration: const Duration(seconds: 1),
                       ),
                     );

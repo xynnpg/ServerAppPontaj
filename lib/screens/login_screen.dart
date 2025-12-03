@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:pontaj_admin/l10n/app_localizations.dart';
 import '../models/login_response.dart';
 import '../services/auth_service.dart';
+import '../widgets/language_switcher.dart';
 import 'admin_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -113,234 +115,265 @@ class _LoginScreenState extends State<LoginScreen>
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isDesktop = size.width > 900;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      body: Row(
+      body: Stack(
         children: [
-          // Left Side - Branding (Desktop only)
-          if (isDesktop)
-            Expanded(
-              flex: 4,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor,
-                  image: DecorationImage(
-                    image: const NetworkImage(
-                      'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=2070&auto=format&fit=crop',
-                    ),
-                    fit: BoxFit.cover,
-                    colorFilter: ColorFilter.mode(
-                      Theme.of(context).primaryColor.withOpacity(0.8),
-                      BlendMode.darken,
-                    ),
-                  ),
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.school_outlined,
-                        size: 100,
-                        color: Colors.white.withOpacity(0.9),
-                      ),
-                      const SizedBox(height: 32),
-                      Text(
-                        'Colegiul Național\n"Vasile Goldiș"',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.displaySmall
-                            ?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'Serif',
-                            ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Excellence in Education',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: 18,
-                          letterSpacing: 1.2,
+          Row(
+            children: [
+              // Left Side - Branding (Desktop only)
+              if (isDesktop)
+                Expanded(
+                  flex: 4,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor,
+                      image: DecorationImage(
+                        image: const NetworkImage(
+                          'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=2070&auto=format&fit=crop',
+                        ),
+                        fit: BoxFit.cover,
+                        colorFilter: ColorFilter.mode(
+                          Theme.of(context).primaryColor.withOpacity(0.8),
+                          BlendMode.darken,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-          // Right Side - Login Form
-          Expanded(
-            flex: 6,
-            child: Container(
-              color: Colors.white,
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 48.0),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 480),
-                    child: FadeTransition(
-                      opacity: _fadeAnimation,
+                    ),
+                    child: Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          if (!isDesktop) ...[
-                            Center(
-                              child: Icon(
-                                Icons.school,
-                                size: 64,
-                                color: Theme.of(context).primaryColor,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            Text(
-                              'Colegiul Național\n"Vasile Goldiș"',
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.headlineSmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).primaryColor,
-                                    fontFamily: 'Serif',
-                                  ),
-                            ),
-                            const SizedBox(height: 48),
-                          ],
+                          Icon(
+                            Icons.school_outlined,
+                            size: 100,
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                          const SizedBox(height: 32),
                           Text(
-                            'Welcome Back',
-                            style: Theme.of(context).textTheme.headlineMedium
+                            l10n.schoolName,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.displaySmall
                                 ?.copyWith(
+                                  color: Colors.white,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
+                                  fontFamily: 'Serif',
                                 ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 16),
                           Text(
-                            'Please sign in to access the admin portal.',
+                            l10n.excellenceInEducation,
                             style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 16,
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 18,
+                              letterSpacing: 1.2,
                             ),
                           ),
-                          const SizedBox(height: 48),
-                          Form(
-                            key: _formKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                TextFormField(
-                                  controller: _usernameController,
-                                  decoration: InputDecoration(
-                                    labelText: 'Email Address',
-                                    hintText: 'admin@example.com',
-                                    prefixIcon: const Icon(
-                                      Icons.email_outlined,
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.grey[100],
-                                    contentPadding: const EdgeInsets.all(20),
-                                  ),
-                                  validator: (value) => value?.isEmpty ?? true
-                                      ? 'Required'
-                                      : null,
-                                ),
-                                const SizedBox(height: 24),
-                                TextFormField(
-                                  controller: _passwordController,
-                                  decoration: InputDecoration(
-                                    labelText: 'Password',
-                                    prefixIcon: const Icon(Icons.lock_outline),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.grey[100],
-                                    contentPadding: const EdgeInsets.all(20),
-                                  ),
-                                  obscureText: true,
-                                  validator: (value) => value?.isEmpty ?? true
-                                      ? 'Required'
-                                      : null,
-                                ),
-                                const SizedBox(height: 32),
-                                SizedBox(
-                                  height: 56,
-                                  child: ElevatedButton(
-                                    onPressed: _isLoading ? null : _handleLogin,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Theme.of(
-                                        context,
-                                      ).primaryColor,
-                                      foregroundColor: Colors.white,
-                                      elevation: 0,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                    ),
-                                    child: _isLoading
-                                        ? const SizedBox(
-                                            height: 24,
-                                            width: 24,
-                                            child: CircularProgressIndicator(
-                                              color: Colors.white,
-                                              strokeWidth: 2,
-                                            ),
-                                          )
-                                        : const Text(
-                                            'Sign In',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (_loginResponse != null &&
-                              !_loginResponse!.isSuccess) ...[
-                            const SizedBox(height: 32),
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.red.shade50,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.red.shade200),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.error_outline,
-                                    color: Colors.red.shade700,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _loginResponse!.detail ?? 'Login failed',
-                                      style: TextStyle(
-                                        color: Colors.red.shade900,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
                         ],
                       ),
                     ),
                   ),
                 ),
+
+              // Right Side - Login Form
+              Expanded(
+                flex: 6,
+                child: Container(
+                  color: Colors.white,
+                  child: Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 48.0),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 480),
+                        child: FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (!isDesktop) ...[
+                                Center(
+                                  child: Icon(
+                                    Icons.school,
+                                    size: 64,
+                                    color: Theme.of(context).primaryColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                Text(
+                                  l10n.schoolName,
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineSmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context).primaryColor,
+                                        fontFamily: 'Serif',
+                                      ),
+                                ),
+                                const SizedBox(height: 48),
+                              ],
+                              Text(
+                                l10n.welcomeBack,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                    ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                l10n.signInMessage,
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 48),
+                              Form(
+                                key: _formKey,
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    TextFormField(
+                                      controller: _usernameController,
+                                      decoration: InputDecoration(
+                                        labelText: l10n.email,
+                                        hintText: 'admin@example.com',
+                                        prefixIcon: const Icon(
+                                          Icons.email_outlined,
+                                        ),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                          borderSide: BorderSide.none,
+                                        ),
+                                        filled: true,
+                                        fillColor: Colors.grey[100],
+                                        contentPadding: const EdgeInsets.all(
+                                          20,
+                                        ),
+                                      ),
+                                      validator: (value) =>
+                                          value?.isEmpty ?? true
+                                          ? l10n.requiredField
+                                          : null,
+                                    ),
+                                    const SizedBox(height: 24),
+                                    TextFormField(
+                                      controller: _passwordController,
+                                      decoration: InputDecoration(
+                                        labelText: l10n.password,
+                                        prefixIcon: const Icon(
+                                          Icons.lock_outline,
+                                        ),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                          borderSide: BorderSide.none,
+                                        ),
+                                        filled: true,
+                                        fillColor: Colors.grey[100],
+                                        contentPadding: const EdgeInsets.all(
+                                          20,
+                                        ),
+                                      ),
+                                      obscureText: true,
+                                      validator: (value) =>
+                                          value?.isEmpty ?? true
+                                          ? l10n.requiredField
+                                          : null,
+                                    ),
+                                    const SizedBox(height: 32),
+                                    SizedBox(
+                                      height: 56,
+                                      child: ElevatedButton(
+                                        onPressed: _isLoading
+                                            ? null
+                                            : _handleLogin,
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Theme.of(
+                                            context,
+                                          ).primaryColor,
+                                          foregroundColor: Colors.white,
+                                          elevation: 0,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                          ),
+                                        ),
+                                        child: _isLoading
+                                            ? const SizedBox(
+                                                height: 24,
+                                                width: 24,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      color: Colors.white,
+                                                      strokeWidth: 2,
+                                                    ),
+                                              )
+                                            : Text(
+                                                l10n.loginButton,
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (_loginResponse != null &&
+                                  !_loginResponse!.isSuccess) ...[
+                                const SizedBox(height: 32),
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.shade50,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.red.shade200,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.error_outline,
+                                        color: Colors.red.shade700,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          _loginResponse!.detail ??
+                                              'Login failed',
+                                          style: TextStyle(
+                                            color: Colors.red.shade900,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
+          const Positioned(top: 16, right: 16, child: LanguageSwitcher()),
         ],
       ),
     );

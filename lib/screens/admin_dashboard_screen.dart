@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:pontaj_admin/l10n/app_localizations.dart';
 import '../models/professor.dart';
 import '../services/admin_service.dart';
 import '../services/auth_service.dart';
 import '../services/error_service.dart';
 import '../utils/csv_downloader.dart';
 import '../utils/apk_downloader.dart';
+import '../widgets/language_switcher.dart';
 import 'login_screen.dart';
 import 'debug_screen.dart';
 
@@ -87,8 +89,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   }
 
   void _downloadCsv() {
+    final l10n = AppLocalizations.of(context)!;
     if (_currentAdmins.isEmpty) {
-      ErrorService().showError('No data to export');
+      ErrorService().showError(l10n.noDataToExport);
       return;
     }
 
@@ -99,7 +102,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     }
 
     downloadCsvFile(buffer.toString(), 'professors_stats.csv');
-    ErrorService().showSuccess('Stats exported to CSV successfully');
+    ErrorService().showSuccess(l10n.statsExportedSuccess);
   }
 
   void _downloadApk() {
@@ -107,6 +110,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   }
 
   Future<void> _showProfessorDialog({Professor? professor}) async {
+    final l10n = AppLocalizations.of(context)!;
     final isEditing = professor != null;
     final nameController = TextEditingController(text: professor?.name ?? '');
     final emailController = TextEditingController(text: professor?.email ?? '');
@@ -132,7 +136,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  title: Text(isEditing ? 'Edit Professor' : 'Add Professor'),
+                  title: Text(
+                    isEditing ? l10n.editProfessor : l10n.addProfessor,
+                  ),
                   content: Form(
                     key: formKey,
                     child: Column(
@@ -141,20 +147,21 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                         TextFormField(
                           controller: nameController,
                           decoration: InputDecoration(
-                            labelText: 'Name',
+                            labelText: l10n.name,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             prefixIcon: const Icon(Icons.person),
                           ),
-                          validator: (value) =>
-                              value?.isEmpty ?? true ? 'Required' : null,
+                          validator: (value) => value?.isEmpty ?? true
+                              ? l10n.requiredField
+                              : null,
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: emailController,
                           decoration: InputDecoration(
-                            labelText: 'Email',
+                            labelText: l10n.email,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -163,10 +170,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
                             if (value?.isEmpty ?? true) {
-                              return 'Email is required';
+                              return l10n.emailRequired;
                             }
                             if (!value!.contains('@') || !value.contains('.')) {
-                              return 'Email must be in format: user@domain.com';
+                              return l10n.emailInvalid;
                             }
                             return null;
                           },
@@ -175,22 +182,24 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                         TextFormField(
                           controller: passwordController,
                           decoration: InputDecoration(
-                            labelText: isEditing ? 'New Password' : 'Password',
+                            labelText: isEditing
+                                ? l10n.newPassword
+                                : l10n.password,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             prefixIcon: const Icon(Icons.lock),
-                            helperText: 'Minimum 6 characters',
+                            helperText: l10n.passwordMinLength,
                           ),
                           obscureText: true,
                           validator: (value) {
                             if (!isEditing && (value?.isEmpty ?? true)) {
-                              return 'Password is required';
+                              return l10n.passwordRequired;
                             }
                             if (value != null &&
                                 value.isNotEmpty &&
                                 value.length < 6) {
-                              return 'Password must be at least 6 characters';
+                              return l10n.passwordMinLength;
                             }
                             return null;
                           },
@@ -208,7 +217,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                       onPressed: isLoading
                           ? null
                           : () => Navigator.pop(context),
-                      child: const Text('Cancel'),
+                      child: Text(l10n.cancel),
                     ),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -225,7 +234,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                                   if (isEditing) {
                                     await _adminService.updateProfessor(
                                       widget.token,
-                                      professor.id,
+                                      professor!.id,
                                       nameController.text,
                                       emailController.text,
                                       passwordController.text,
@@ -250,7 +259,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                                 }
                               }
                             },
-                      child: Text(isEditing ? 'Save' : 'Add'),
+                      child: Text(isEditing ? l10n.save : l10n.add),
                     ),
                   ],
                 );
@@ -263,20 +272,21 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   }
 
   Future<void> _deleteProfessor(Professor professor) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirm Delete'),
-        content: Text('Are you sure you want to delete ${professor.name}?'),
+        title: Text(l10n.confirmDelete),
+        content: Text(l10n.deleteConfirmation(professor.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -305,7 +315,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final dateStr = DateFormat('EEEE, d MMMM').format(now);
+    // Localize date format
+    final l10n = AppLocalizations.of(context)!;
+    final dateStr = DateFormat('EEEE, d MMMM', l10n.localeName).format(now);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F2F7), // iOS System Gray 6
@@ -328,7 +340,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                 flexibleSpace: FlexibleSpaceBar(
                   titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
                   title: Text(
-                    'Dashboard',
+                    l10n.dashboard,
                     style: TextStyle(
                       color: Colors.black.withOpacity(0.8),
                       fontWeight: FontWeight.bold,
@@ -354,6 +366,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                   centerTitle: false,
                 ),
                 actions: [
+                  // Language Switcher
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8.0),
+                    child: LanguageSwitcher(),
+                  ),
                   if (kIsWeb)
                     IconButton(
                       onPressed: _downloadApk,
@@ -376,7 +393,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                           color: Colors.black87,
                         ),
                       ),
-                      tooltip: 'Download APK',
+                      tooltip: l10n.downloadApk,
                     ),
                   Padding(
                     padding: const EdgeInsets.only(right: 16.0, left: 8.0),
@@ -421,36 +438,40 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                         }
                       },
                       itemBuilder: (BuildContext context) => [
-                        const PopupMenuItem<String>(
+                        PopupMenuItem<String>(
                           value: 'debug',
                           child: Row(
                             children: [
-                              Icon(Icons.bug_report, size: 20),
-                              SizedBox(width: 12),
-                              Text('Debug Console'),
+                              const Icon(Icons.bug_report, size: 20),
+                              const SizedBox(width: 12),
+                              Text(l10n.debugConsole),
                             ],
                           ),
                         ),
-                        const PopupMenuItem<String>(
+                        PopupMenuItem<String>(
                           value: 'csv',
                           child: Row(
                             children: [
-                              Icon(Icons.download_rounded, size: 20),
-                              SizedBox(width: 12),
-                              Text('Download CSV'),
+                              const Icon(Icons.download_rounded, size: 20),
+                              const SizedBox(width: 12),
+                              Text(l10n.downloadCsv),
                             ],
                           ),
                         ),
                         const PopupMenuDivider(),
-                        const PopupMenuItem<String>(
+                        PopupMenuItem<String>(
                           value: 'logout',
                           child: Row(
                             children: [
-                              Icon(Icons.logout, size: 20, color: Colors.red),
-                              SizedBox(width: 12),
+                              const Icon(
+                                Icons.logout,
+                                size: 20,
+                                color: Colors.red,
+                              ),
+                              const SizedBox(width: 12),
                               Text(
-                                'Logout',
-                                style: TextStyle(color: Colors.red),
+                                l10n.logout,
+                                style: const TextStyle(color: Colors.red),
                               ),
                             ],
                           ),
@@ -478,7 +499,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Professors',
+                              l10n.professors,
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -499,7 +520,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                                 ),
                               ),
                               child: Text(
-                                '${admins.length} Total',
+                                '${admins.length} ${l10n.total}',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -628,9 +649,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             borderRadius: BorderRadius.circular(30),
           ),
           icon: const Icon(Icons.add),
-          label: const Text(
-            'Add Professor',
-            style: TextStyle(fontWeight: FontWeight.w600),
+          label: Text(
+            l10n.addProfessor,
+            style: const TextStyle(fontWeight: FontWeight.w600),
           ),
         ),
       ),
@@ -638,6 +659,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   }
 
   Widget _buildChartsSection(List<Professor> admins) {
+    final l10n = AppLocalizations.of(context)!;
     // Prepare data for Activity Overview (using IDs as proxy for timeline)
     // We'll take the last 10 admins to show recent "activity"
     final recentAdmins = admins.length > 10
@@ -664,7 +686,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
           shrinkWrap: true,
           children: [
             _buildChartCard(
-              title: 'ID Growth (Activity)',
+              title: l10n.idGrowth,
               width: 400,
               child: LineChart(
                 LineChartData(
@@ -712,7 +734,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             ),
             const SizedBox(width: 24),
             _buildChartCard(
-              title: 'System Status',
+              title: l10n.systemStatus,
               width: 280,
               child: Stack(
                 alignment: Alignment.center,
@@ -744,7 +766,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                         ),
                       ),
                       Text(
-                        'Professors',
+                        l10n.professors,
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[600],
@@ -813,7 +835,7 @@ class _AnimatedListItem extends StatefulWidget {
 class _AnimatedListItemState extends State<_AnimatedListItem>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
+  late Animation<double> _animation;
   late Animation<Offset> _slideAnimation;
 
   @override
@@ -821,18 +843,19 @@ class _AnimatedListItemState extends State<_AnimatedListItem>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 600),
     );
-    _fadeAnimation = CurvedAnimation(
+    _animation = CurvedAnimation(
       parent: _controller,
-      curve: Curves.easeOut,
+      curve: Curves.easeOutCubic,
     );
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(0.1, 0),
+      begin: const Offset(0, 0.2),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutQuart));
+    ).animate(_animation);
 
-    Future.delayed(Duration(milliseconds: 100 * widget.index), () {
+    // Staggered animation
+    Future.delayed(Duration(milliseconds: widget.index * 50), () {
       if (mounted) _controller.forward();
     });
   }
@@ -846,7 +869,7 @@ class _AnimatedListItemState extends State<_AnimatedListItem>
   @override
   Widget build(BuildContext context) {
     return FadeTransition(
-      opacity: _fadeAnimation,
+      opacity: _animation,
       child: SlideTransition(position: _slideAnimation, child: widget.child),
     );
   }

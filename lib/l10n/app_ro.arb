@@ -1,0 +1,76 @@
+{
+    "@@locale": "ro",
+    "appTitle": "Pontaj Admin",
+    "@appTitle": {
+        "description": "Titlul aplicatiei"
+    },
+    "dashboard": "Panou de Control",
+    "users": "Utilizatori",
+    "settings": "Setari",
+    "logout": "Deconectare",
+    "login": "Autentificare",
+    "email": "Email",
+    "password": "Parola",
+    "loginButton": "Intra in Cont",
+    "language": "Limba",
+    "selectLanguage": "Selecteaza Limba",
+    "welcomeBack": "Bine ai revenit",
+    "signInMessage": "Te rugam sa te autentifici pentru a accesa portalul.",
+    "requiredField": "Obligatoriu",
+    "schoolName": "Colegiul Național\n\"Vasile Goldiș\"",
+    "excellenceInEducation": "Excelență în Educație",
+    "noDataToExport": "Nu există date de exportat",
+    "statsExportedSuccess": "Statistici exportate în CSV cu succes",
+    "editProfessor": "Editează Profesor",
+    "addProfessor": "Adaugă Profesor",
+    "name": "Nume",
+    "emailRequired": "Email-ul este obligatoriu",
+    "emailInvalid": "Email-ul trebuie să fie în formatul: user@domain.com",
+    "newPassword": "Parolă Nouă",
+    "passwordRequired": "Parola este obligatorie",
+    "passwordMinLength": "Parola trebuie să aibă cel puțin 6 caractere",
+    "cancel": "Anulează",
+    "save": "Salvează",
+    "add": "Adaugă",
+    "confirmDelete": "Confirmă Ștergerea",
+    "deleteConfirmation": "Ești sigur că vrei să ștergi pe {name}?",
+    "@deleteConfirmation": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "delete": "Șterge",
+    "downloadApk": "Descarcă APK",
+    "debugConsole": "Consolă Debug",
+    "downloadCsv": "Descarcă CSV",
+    "professors": "Profesori",
+    "total": "Total",
+    "idGrowth": "Creștere ID (Activitate)",
+    "systemStatus": "Stare Sistem",
+    "logs": "Jurnale",
+    "clearLogs": "Șterge Jurnalele",
+    "clearLogsConfirmation": "Ești sigur că vrei să ștergi toate jurnalele?",
+    "clear": "Șterge",
+    "searchLogs": "Caută jurnale...",
+    "all": "Toate",
+    "withInput": "Cu Intrare",
+    "withOutput": "Cu Ieșire",
+    "stackTraces": "Urme Stivă",
+    "noLogsMatch": "Niciun jurnal nu corespunde filtrelor",
+    "noLogsYet": "Niciun jurnal încă",
+    "input": "Intrare",
+    "output": "Ieșire",
+    "trace": "URMĂ",
+    "fullMessage": "Mesaj Complet",
+    "stackTrace": "Urmă Stivă",
+    "copied": "{title} copiat",
+    "@copied": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    }
+}

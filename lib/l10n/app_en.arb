@@ -1,0 +1,73 @@
+{
+    "@@locale": "en",
+    "appTitle": "Pontaj Admin",
+    "dashboard": "Dashboard",
+    "users": "Users",
+    "settings": "Settings",
+    "logout": "Logout",
+    "login": "Login",
+    "email": "Email",
+    "password": "Password",
+    "loginButton": "Login",
+    "language": "Language",
+    "selectLanguage": "Select Language",
+    "welcomeBack": "Welcome Back",
+    "signInMessage": "Please sign in to access the admin portal.",
+    "requiredField": "Required",
+    "schoolName": "Colegiul Național\n\"Vasile Goldiș\"",
+    "excellenceInEducation": "Excellence in Education",
+    "noDataToExport": "No data to export",
+    "statsExportedSuccess": "Stats exported to CSV successfully",
+    "editProfessor": "Edit Professor",
+    "addProfessor": "Add Professor",
+    "name": "Name",
+    "emailRequired": "Email is required",
+    "emailInvalid": "Email must be in format: user@domain.com",
+    "newPassword": "New Password",
+    "passwordRequired": "Password is required",
+    "passwordMinLength": "Password must be at least 6 characters",
+    "cancel": "Cancel",
+    "save": "Save",
+    "add": "Add",
+    "confirmDelete": "Confirm Delete",
+    "deleteConfirmation": "Are you sure you want to delete {name}?",
+    "@deleteConfirmation": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "delete": "Delete",
+    "downloadApk": "Download APK",
+    "debugConsole": "Debug Console",
+    "downloadCsv": "Download CSV",
+    "professors": "Professors",
+    "total": "Total",
+    "idGrowth": "ID Growth (Activity)",
+    "systemStatus": "System Status",
+    "logs": "Logs",
+    "clearLogs": "Clear Logs",
+    "clearLogsConfirmation": "Are you sure you want to clear all logs?",
+    "clear": "Clear",
+    "searchLogs": "Search logs...",
+    "all": "All",
+    "withInput": "With Input",
+    "withOutput": "With Output",
+    "stackTraces": "Stack Traces",
+    "noLogsMatch": "No logs match your filters",
+    "noLogsYet": "No logs yet",
+    "input": "Input",
+    "output": "Output",
+    "trace": "TRACE",
+    "fullMessage": "Full Message",
+    "stackTrace": "Stack Trace",
+    "copied": "{title} copied",
+    "@copied": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    }
+}
