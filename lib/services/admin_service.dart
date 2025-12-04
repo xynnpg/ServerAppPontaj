@@ -111,15 +111,10 @@ class AdminService {
     int id,
     String name,
     String email,
-    String password,
   ) async {
     final uri = Uri.parse('${AuthService.baseUrl}/admin/profesori/$id');
     try {
       final Map<String, dynamic> body = {'nume': name, 'email': email};
-
-      if (password.isNotEmpty) {
-        body['password'] = password;
-      }
 
       final response = await http.put(
         uri,
@@ -132,6 +127,11 @@ class AdminService {
       );
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
+        ErrorService().logInfo(
+          'PUT /admin/profesori/$id - Success',
+          input: 'PUT /admin/profesori/$id',
+          output: 'Status: ${response.statusCode}',
+        );
         return;
       } else {
         try {
@@ -142,16 +142,71 @@ class AdminService {
             );
           }
         } catch (_) {}
+        ErrorService().showError(
+          'PUT /admin/profesori/$id - Failed',
+          input: jsonEncode(body),
+          output: 'Status: ${response.statusCode}, Body: ${response.body}',
+          notificationMessage: 'Server Error',
+        );
         throw Exception(
           'Failed to update professor: ${response.statusCode} ${response.body}',
         );
       }
     } catch (e) {
-      ErrorService().showError(
-        'Error updating professor: $e',
-        notificationMessage: 'Server Error',
-      );
+      if (!e.toString().contains('Server Error')) {
+        ErrorService().showError(
+          'Error updating professor: $e',
+          notificationMessage: 'Server Error',
+        );
+      }
       throw Exception('$e');
+    }
+  }
+
+  Future<Professor> changePassword(
+    String token,
+    int id,
+    String password,
+  ) async {
+    final uri = Uri.parse('${AuthService.baseUrl}/admin/changepassword/$id');
+    try {
+      final response = await http.put(
+        uri,
+        headers: {
+          'accept': 'application/json',
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'password': password}),
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        ErrorService().logInfo(
+          'PUT /admin/changepassword/$id - Success',
+          input: 'PUT /admin/changepassword/$id',
+          output: 'Status: ${response.statusCode}, ID: ${data['ID']}',
+        );
+        return Professor.fromJson(data);
+      } else {
+        ErrorService().showError(
+          'PUT /admin/changepassword/$id - Failed',
+          input: 'Password change request',
+          output: 'Status: ${response.statusCode}, Body: ${response.body}',
+          notificationMessage: 'Server Error',
+        );
+        throw Exception(
+          'Failed to change password: ${response.statusCode} ${response.body}',
+        );
+      }
+    } catch (e) {
+      if (!e.toString().contains('Server Error')) {
+        ErrorService().showError(
+          'Error changing password: $e',
+          notificationMessage: 'Server Error',
+        );
+      }
+      throw Exception('Error changing password: $e');
     }
   }
 }

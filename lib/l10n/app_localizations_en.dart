@@ -180,4 +180,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String copied(String title) {
     return '$title copied';
   }
+
+  @override
+  String get changePassword => 'Change Password';
+
+  @override
+  String get passwordChangeSuccess => 'Password changed successfully';
+
+  @override
+  String get students => 'Students';
+
+  @override
+  String get addStudent => 'Add Student';
+
+  @override
+  String get editStudent => 'Edit Student';
+
+  @override
+  String get studentCode => 'Student Code';
+
+  @override
+  String get activeStatus => 'Active Status';
+
+  @override
+  String get active => 'Active';
+
+  @override
+  String get inactive => 'Inactive';
+
+  @override
+  String get codMatricol => 'Student Code';
 }

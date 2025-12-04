@@ -72,5 +72,15 @@
                 "type": "String"
             }
         }
-    }
+    },
+    "changePassword": "Schimbă Parola",
+    "passwordChangeSuccess": "Parola a fost schimbată cu succes",
+    "students": "Elevi",
+    "addStudent": "Adaugă Elev",
+    "editStudent": "Editează Elev",
+    "studentCode": "Cod Matricol",
+    "activeStatus": "Status Activ",
+    "active": "Activ",
+    "inactive": "Inactiv",
+    "codMatricol": "Cod Matricol"
 }

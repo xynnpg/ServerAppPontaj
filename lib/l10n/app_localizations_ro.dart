@@ -183,4 +183,34 @@ class AppLocalizationsRo extends AppLocalizations {
   String copied(String title) {
     return '$title copiat';
   }
+
+  @override
+  String get changePassword => 'Schimbă Parola';
+
+  @override
+  String get passwordChangeSuccess => 'Parola a fost schimbată cu succes';
+
+  @override
+  String get students => 'Elevi';
+
+  @override
+  String get addStudent => 'Adaugă Elev';
+
+  @override
+  String get editStudent => 'Editează Elev';
+
+  @override
+  String get studentCode => 'Cod Matricol';
+
+  @override
+  String get activeStatus => 'Status Activ';
+
+  @override
+  String get active => 'Activ';
+
+  @override
+  String get inactive => 'Inactiv';
+
+  @override
+  String get codMatricol => 'Cod Matricol';
 }

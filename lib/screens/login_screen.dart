@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pontaj_admin/l10n/app_localizations.dart';
 import '../models/login_response.dart';
 import '../services/auth_service.dart';
@@ -144,10 +145,10 @@ class _LoginScreenState extends State<LoginScreen>
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.school_outlined,
-                            size: 100,
-                            color: Colors.white.withOpacity(0.9),
+                          SvgPicture.asset(
+                            'assets/images/school_logo.svg',
+                            width: 180,
+                            height: 180,
                           ),
                           const SizedBox(height: 32),
                           Text(
@@ -193,10 +194,14 @@ class _LoginScreenState extends State<LoginScreen>
                             children: [
                               if (!isDesktop) ...[
                                 Center(
-                                  child: Icon(
-                                    Icons.school,
-                                    size: 64,
-                                    color: Theme.of(context).primaryColor,
+                                  child: SvgPicture.asset(
+                                    'assets/images/school_logo.svg',
+                                    width: 100,
+                                    height: 100,
+                                    colorFilter: ColorFilter.mode(
+                                      Theme.of(context).primaryColor,
+                                      BlendMode.srcIn,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 24),

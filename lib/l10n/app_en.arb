@@ -69,5 +69,15 @@
                 "type": "String"
             }
         }
-    }
+    },
+    "changePassword": "Change Password",
+    "passwordChangeSuccess": "Password changed successfully",
+    "students": "Students",
+    "addStudent": "Add Student",
+    "editStudent": "Edit Student",
+    "studentCode": "Student Code",
+    "activeStatus": "Active Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "codMatricol": "Student Code"
 }

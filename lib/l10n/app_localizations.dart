@@ -5,11 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
-import 'app_localizations_de.dart';
 import 'app_localizations_en.dart';
-import 'app_localizations_es.dart';
-import 'app_localizations_fr.dart';
-import 'app_localizations_it.dart';
 import 'app_localizations_ro.dart';
 
 // ignore_for_file: type=lint
@@ -98,11 +94,7 @@ abstract class AppLocalizations {
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
-    Locale('de'),
     Locale('en'),
-    Locale('es'),
-    Locale('fr'),
-    Locale('it'),
     Locale('ro'),
   ];
 
@@ -441,6 +433,66 @@ abstract class AppLocalizations {
   /// In ro, this message translates to:
   /// **'{title} copiat'**
   String copied(String title);
+
+  /// No description provided for @changePassword.
+  ///
+  /// In ro, this message translates to:
+  /// **'Schimbă Parola'**
+  String get changePassword;
+
+  /// No description provided for @passwordChangeSuccess.
+  ///
+  /// In ro, this message translates to:
+  /// **'Parola a fost schimbată cu succes'**
+  String get passwordChangeSuccess;
+
+  /// No description provided for @students.
+  ///
+  /// In ro, this message translates to:
+  /// **'Elevi'**
+  String get students;
+
+  /// No description provided for @addStudent.
+  ///
+  /// In ro, this message translates to:
+  /// **'Adaugă Elev'**
+  String get addStudent;
+
+  /// No description provided for @editStudent.
+  ///
+  /// In ro, this message translates to:
+  /// **'Editează Elev'**
+  String get editStudent;
+
+  /// No description provided for @studentCode.
+  ///
+  /// In ro, this message translates to:
+  /// **'Cod Matricol'**
+  String get studentCode;
+
+  /// No description provided for @activeStatus.
+  ///
+  /// In ro, this message translates to:
+  /// **'Status Activ'**
+  String get activeStatus;
+
+  /// No description provided for @active.
+  ///
+  /// In ro, this message translates to:
+  /// **'Activ'**
+  String get active;
+
+  /// No description provided for @inactive.
+  ///
+  /// In ro, this message translates to:
+  /// **'Inactiv'**
+  String get inactive;
+
+  /// No description provided for @codMatricol.
+  ///
+  /// In ro, this message translates to:
+  /// **'Cod Matricol'**
+  String get codMatricol;
 }
 
 class _AppLocalizationsDelegate
@@ -453,14 +505,8 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) => <String>[
-    'de',
-    'en',
-    'es',
-    'fr',
-    'it',
-    'ro',
-  ].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['en', 'ro'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -469,16 +515,8 @@ class _AppLocalizationsDelegate
 AppLocalizations lookupAppLocalizations(Locale locale) {
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'de':
-      return AppLocalizationsDe();
     case 'en':
       return AppLocalizationsEn();
-    case 'es':
-      return AppLocalizationsEs();
-    case 'fr':
-      return AppLocalizationsFr();
-    case 'it':
-      return AppLocalizationsIt();
     case 'ro':
       return AppLocalizationsRo();
   }

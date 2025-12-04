@@ -37,10 +37,6 @@ class MyApp extends StatelessWidget {
       supportedLocales: const [
         Locale('ro'), // Romanian
         Locale('en'), // English
-        Locale('fr'), // French
-        Locale('de'), // German
-        Locale('es'), // Spanish
-        Locale('it'), // Italian
       ],
       builder: (context, child) {
         return ErrorOverlay(child: child!);

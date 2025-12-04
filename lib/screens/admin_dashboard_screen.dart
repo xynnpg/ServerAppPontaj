@@ -4,7 +4,9 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:pontaj_admin/l10n/app_localizations.dart';
 import '../models/professor.dart';
+import '../models/elev.dart';
 import '../services/admin_service.dart';
+import '../services/elev_service.dart';
 import '../services/auth_service.dart';
 import '../services/error_service.dart';
 import '../utils/csv_downloader.dart';
@@ -30,11 +32,14 @@ class AdminDashboardScreen extends StatefulWidget {
 class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final _adminService = AdminService();
+  final _elevService = ElevService();
   final _authService = AuthService();
   late Future<AdminListResponse> _adminsFuture;
+  late Future<ElevListResponse> _eleviFuture;
   late AnimationController _fabController;
   late Animation<double> _fabAnimation;
   List<Professor> _currentAdmins = [];
+  List<Elev> _currentElevi = [];
 
   @override
   void initState() {
@@ -69,6 +74,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   void _refreshList() {
     setState(() {
       _adminsFuture = _fetchAdmins();
+      _eleviFuture = _fetchElevi();
     });
   }
 
@@ -76,6 +82,22 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     try {
       final response = await _adminService.getProfessors(widget.token);
       _currentAdmins = response.admins;
+      return response;
+    } catch (e) {
+      if (e.toString().contains('401')) {
+        // Token expired or invalid
+        if (mounted) {
+          _handleLogout();
+        }
+      }
+      rethrow;
+    }
+  }
+
+  Future<ElevListResponse> _fetchElevi() async {
+    try {
+      final response = await _elevService.getElevi(widget.token);
+      _currentElevi = response.elevi;
       return response;
     } catch (e) {
       if (e.toString().contains('401')) {
@@ -132,136 +154,182 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             opacity: animation,
             child: StatefulBuilder(
               builder: (context, setState) {
-                return AlertDialog(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  title: Text(
-                    isEditing ? l10n.editProfessor : l10n.addProfessor,
-                  ),
-                  content: Form(
-                    key: formKey,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        TextFormField(
-                          controller: nameController,
-                          decoration: InputDecoration(
-                            labelText: l10n.name,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            prefixIcon: const Icon(Icons.person),
-                          ),
-                          validator: (value) => value?.isEmpty ?? true
-                              ? l10n.requiredField
-                              : null,
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: emailController,
-                          decoration: InputDecoration(
-                            labelText: l10n.email,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            prefixIcon: const Icon(Icons.email),
-                          ),
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (value) {
-                            if (value?.isEmpty ?? true) {
-                              return l10n.emailRequired;
-                            }
-                            if (!value!.contains('@') || !value.contains('.')) {
-                              return l10n.emailInvalid;
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: passwordController,
-                          decoration: InputDecoration(
-                            labelText: isEditing
-                                ? l10n.newPassword
-                                : l10n.password,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            prefixIcon: const Icon(Icons.lock),
-                            helperText: l10n.passwordMinLength,
-                          ),
-                          obscureText: true,
-                          validator: (value) {
-                            if (!isEditing && (value?.isEmpty ?? true)) {
-                              return l10n.passwordRequired;
-                            }
-                            if (value != null &&
-                                value.isNotEmpty &&
-                                value.length < 6) {
-                              return l10n.passwordMinLength;
-                            }
-                            return null;
-                          },
-                        ),
-                        if (isLoading)
-                          const Padding(
-                            padding: EdgeInsets.only(top: 16.0),
-                            child: CircularProgressIndicator(),
-                          ),
-                      ],
+                return Dialog(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 340),
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF2F2F7),
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: isLoading
-                          ? null
-                          : () => Navigator.pop(context),
-                      child: Text(l10n.cancel),
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: isLoading
-                          ? null
-                          : () async {
-                              if (formKey.currentState!.validate()) {
-                                setState(() => isLoading = true);
-                                try {
-                                  if (isEditing) {
-                                    await _adminService.updateProfessor(
-                                      widget.token,
-                                      professor!.id,
-                                      nameController.text,
-                                      emailController.text,
-                                      passwordController.text,
-                                    );
-                                  } else {
-                                    await _adminService.addProfessor(
-                                      widget.token,
-                                      nameController.text,
-                                      emailController.text,
-                                      passwordController.text,
-                                    );
-                                  }
-                                  if (mounted) {
-                                    Navigator.pop(context);
-                                    _refreshList();
-                                  }
-                                } catch (e) {
-                                  // Error is already logged by ErrorService
-                                } finally {
-                                  if (mounted)
-                                    setState(() => isLoading = false);
-                                }
+                    child: Form(
+                      key: formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isEditing ? l10n.editProfessor : l10n.addProfessor,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black.withOpacity(0.8),
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          // Name field
+                          _buildInputField(
+                            controller: nameController,
+                            label: l10n.name,
+                            icon: Icons.person,
+                            color: Colors.blue,
+                            validator: (value) => value?.isEmpty ?? true
+                                ? l10n.requiredField
+                                : null,
+                          ),
+                          const SizedBox(height: 12),
+                          // Email field
+                          _buildInputField(
+                            controller: emailController,
+                            label: l10n.email,
+                            icon: Icons.email,
+                            color: Colors.blue,
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (value) {
+                              if (value?.isEmpty ?? true) {
+                                return l10n.emailRequired;
                               }
+                              if (!value!.contains('@') ||
+                                  !value.contains('.')) {
+                                return l10n.emailInvalid;
+                              }
+                              return null;
                             },
-                      child: Text(isEditing ? l10n.save : l10n.add),
+                          ),
+                          if (!isEditing) ...[
+                            const SizedBox(height: 12),
+                            // Password field
+                            _buildInputField(
+                              controller: passwordController,
+                              label: l10n.password,
+                              icon: Icons.lock,
+                              color: Colors.blue,
+                              obscureText: true,
+                              helperText: l10n.passwordMinLength,
+                              validator: (value) {
+                                if (value?.isEmpty ?? true) {
+                                  return l10n.passwordRequired;
+                                }
+                                if (value!.length < 6) {
+                                  return l10n.passwordMinLength;
+                                }
+                                return null;
+                              },
+                            ),
+                          ],
+                          if (isLoading)
+                            const Padding(
+                              padding: EdgeInsets.only(top: 16.0),
+                              child: Center(child: CircularProgressIndicator()),
+                            ),
+                          const SizedBox(height: 20),
+                          // Action buttons
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextButton(
+                                  onPressed: isLoading
+                                      ? null
+                                      : () => Navigator.pop(context),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    l10n.cancel,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Theme.of(
+                                      context,
+                                    ).primaryColor,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                  onPressed: isLoading
+                                      ? null
+                                      : () async {
+                                          if (formKey.currentState!
+                                              .validate()) {
+                                            setState(() => isLoading = true);
+                                            try {
+                                              if (isEditing) {
+                                                await _adminService
+                                                    .updateProfessor(
+                                                      widget.token,
+                                                      professor!.id,
+                                                      nameController.text,
+                                                      emailController.text,
+                                                    );
+                                              } else {
+                                                await _adminService
+                                                    .addProfessor(
+                                                      widget.token,
+                                                      nameController.text,
+                                                      emailController.text,
+                                                      passwordController.text,
+                                                    );
+                                              }
+                                              if (mounted) {
+                                                Navigator.pop(context);
+                                                _refreshList();
+                                              }
+                                            } catch (e) {
+                                              // Error is already logged by ErrorService
+                                            } finally {
+                                              if (mounted)
+                                                setState(
+                                                  () => isLoading = false,
+                                                );
+                                            }
+                                          }
+                                        },
+                                  child: Text(
+                                    isEditing ? l10n.save : l10n.add,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
+                  ),
                 );
               },
             ),
@@ -297,6 +365,392 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
         await _adminService.deleteProfessor(widget.token, professor.id);
         _refreshList();
         // Success - refresh the list
+      } catch (e) {
+        // Error is already logged by ErrorService
+      }
+    }
+  }
+
+  Future<void> _showChangePasswordDialog(Professor professor) async {
+    final l10n = AppLocalizations.of(context)!;
+    final passwordController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool isLoading = false;
+
+    await showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Dismiss',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 400),
+      pageBuilder: (context, animation, secondaryAnimation) => const SizedBox(),
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return ScaleTransition(
+          scale: CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+          child: FadeTransition(
+            opacity: animation,
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                return AlertDialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  title: Text('Change Password - ${professor.name}'),
+                  content: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextFormField(
+                          controller: passwordController,
+                          decoration: InputDecoration(
+                            labelText: l10n.newPassword,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            prefixIcon: const Icon(Icons.lock),
+                            helperText: l10n.passwordMinLength,
+                          ),
+                          obscureText: true,
+                          validator: (value) {
+                            if (value?.isEmpty ?? true) {
+                              return l10n.passwordRequired;
+                            }
+                            if (value!.length < 6) {
+                              return l10n.passwordMinLength;
+                            }
+                            return null;
+                          },
+                        ),
+                        if (isLoading)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 16.0),
+                            child: CircularProgressIndicator(),
+                          ),
+                      ],
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: isLoading
+                          ? null
+                          : () => Navigator.pop(context),
+                      child: Text(l10n.cancel),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: isLoading
+                          ? null
+                          : () async {
+                              if (formKey.currentState!.validate()) {
+                                setState(() => isLoading = true);
+                                try {
+                                  await _adminService.changePassword(
+                                    widget.token,
+                                    professor.id,
+                                    passwordController.text,
+                                  );
+                                  if (mounted) {
+                                    Navigator.pop(context);
+                                    ErrorService().showSuccess(
+                                      'Password changed successfully',
+                                    );
+                                  }
+                                } catch (e) {
+                                  // Error is already logged by ErrorService
+                                } finally {
+                                  if (mounted) {
+                                    setState(() => isLoading = false);
+                                  }
+                                }
+                              }
+                            },
+                      child: Text(l10n.save),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showElevDialog({Elev? elev}) async {
+    final l10n = AppLocalizations.of(context)!;
+    final isEditing = elev != null;
+    final nameController = TextEditingController(text: elev?.name ?? '');
+    final emailController = TextEditingController(text: elev?.email ?? '');
+    final codMatricolController = TextEditingController(
+      text: elev?.codMatricol ?? '',
+    );
+    int activeStatus = elev?.activ ?? 0;
+    final formKey = GlobalKey<FormState>();
+    bool isLoading = false;
+
+    await showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Dismiss',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 400),
+      pageBuilder: (context, animation, secondaryAnimation) => const SizedBox(),
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return ScaleTransition(
+          scale: CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+          child: FadeTransition(
+            opacity: animation,
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                return Dialog(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 340),
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF2F2F7),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Form(
+                      key: formKey,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isEditing ? l10n.editStudent : l10n.addStudent,
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black.withOpacity(0.8),
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            // Name field
+                            _buildInputField(
+                              controller: nameController,
+                              label: l10n.name,
+                              icon: Icons.person,
+                              color: Colors.green,
+                              validator: (value) => value?.isEmpty ?? true
+                                  ? l10n.requiredField
+                                  : null,
+                            ),
+                            const SizedBox(height: 12),
+                            // Email field
+                            _buildInputField(
+                              controller: emailController,
+                              label: l10n.email,
+                              icon: Icons.email,
+                              color: Colors.green,
+                              keyboardType: TextInputType.emailAddress,
+                              validator: (value) {
+                                if (value?.isEmpty ?? true) {
+                                  return l10n.emailRequired;
+                                }
+                                if (!value!.contains('@') ||
+                                    !value.contains('.')) {
+                                  return l10n.emailInvalid;
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            // Cod Matricol field
+                            _buildInputField(
+                              controller: codMatricolController,
+                              label: l10n.codMatricol,
+                              icon: Icons.badge,
+                              color: Colors.green,
+                              validator: (value) => value?.isEmpty ?? true
+                                  ? l10n.requiredField
+                                  : null,
+                            ),
+                            const SizedBox(height: 12),
+                            // Active status switch
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: SwitchListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(
+                                  l10n.activeStatus,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  activeStatus == 1
+                                      ? l10n.active
+                                      : l10n.inactive,
+                                  style: TextStyle(
+                                    color: activeStatus == 1
+                                        ? Colors.green[600]
+                                        : Colors.grey[500],
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                value: activeStatus == 1,
+                                activeColor: Colors.green[600],
+                                onChanged: (bool value) {
+                                  setState(() {
+                                    activeStatus = value ? 1 : 0;
+                                  });
+                                },
+                              ),
+                            ),
+                            if (isLoading)
+                              const Padding(
+                                padding: EdgeInsets.only(top: 16.0),
+                                child: Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              ),
+                            const SizedBox(height: 20),
+                            // Action buttons
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextButton(
+                                    onPressed: isLoading
+                                        ? null
+                                        : () => Navigator.pop(context),
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      l10n.cancel,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green[600],
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      elevation: 0,
+                                    ),
+                                    onPressed: isLoading
+                                        ? null
+                                        : () async {
+                                            if (formKey.currentState!
+                                                .validate()) {
+                                              setState(() => isLoading = true);
+                                              try {
+                                                if (isEditing) {
+                                                  await _elevService.updateElev(
+                                                    widget.token,
+                                                    elev.id,
+                                                    nameController.text,
+                                                    emailController.text,
+                                                    codMatricolController.text,
+                                                    activeStatus,
+                                                  );
+                                                } else {
+                                                  await _elevService.addElev(
+                                                    widget.token,
+                                                    nameController.text,
+                                                    emailController.text,
+                                                    codMatricolController.text,
+                                                    activeStatus,
+                                                  );
+                                                }
+                                                if (mounted) {
+                                                  Navigator.pop(context);
+                                                  _refreshList();
+                                                }
+                                              } catch (e) {
+                                                // Error is already logged by ErrorService
+                                              } finally {
+                                                if (mounted) {
+                                                  setState(
+                                                    () => isLoading = false,
+                                                  );
+                                                }
+                                              }
+                                            }
+                                          },
+                                    child: Text(
+                                      isEditing ? l10n.save : l10n.add,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _deleteElev(Elev elev) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.confirmDelete),
+        content: Text(l10n.deleteConfirmation(elev.name)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await _elevService.deleteElev(widget.token, elev.id);
+        _refreshList();
       } catch (e) {
         // Error is already logged by ErrorService
       }
@@ -493,7 +947,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildChartsSection(admins),
+                        _buildChartsSection(admins, _currentElevi),
                         const SizedBox(height: 32),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -608,6 +1062,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                               children: [
                                 IconButton(
                                   icon: Icon(
+                                    Icons.lock_outline,
+                                    color: Colors.orange[400],
+                                    size: 22,
+                                  ),
+                                  onPressed: () =>
+                                      _showChangePasswordDialog(admin),
+                                  tooltip: l10n.changePassword,
+                                ),
+                                IconButton(
+                                  icon: Icon(
                                     Icons.edit_outlined,
                                     color: Colors.blue[400],
                                     size: 22,
@@ -631,6 +1095,209 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                     }, childCount: admins.length),
                   ),
                 ),
+                // Students Section
+                FutureBuilder<ElevListResponse>(
+                  future: _eleviFuture,
+                  builder: (context, snapshot) {
+                    final elevi = snapshot.data?.elevi ?? [];
+
+                    return SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 32, 20, 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  l10n.students,
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black.withOpacity(0.8),
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: Colors.black.withOpacity(0.05),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '${elevi.length} ${l10n.total}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                FutureBuilder<ElevListResponse>(
+                  future: _eleviFuture,
+                  builder: (context, snapshot) {
+                    final elevi = snapshot.data?.elevi ?? [];
+
+                    if (elevi.isEmpty) {
+                      return const SliverToBoxAdapter(child: SizedBox.shrink());
+                    }
+
+                    return SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final elev = elevi[index];
+                          final isFirst = index == 0;
+                          final isLast = index == elevi.length - 1;
+
+                          return _AnimatedListItem(
+                            index: index,
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 1),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.vertical(
+                                  top: isFirst
+                                      ? const Radius.circular(20)
+                                      : Radius.zero,
+                                  bottom: isLast
+                                      ? const Radius.circular(20)
+                                      : Radius.zero,
+                                ),
+                              ),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 12,
+                                ),
+                                leading: Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: elev.activ == 1
+                                        ? Colors.green.withOpacity(0.1)
+                                        : Colors.grey.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      elev.name.isNotEmpty
+                                          ? elev.name[0].toUpperCase()
+                                          : '?',
+                                      style: TextStyle(
+                                        color: elev.activ == 1
+                                            ? Colors.green
+                                            : Colors.grey,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 20,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                title: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        elev.name,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 16,
+                                          letterSpacing: -0.3,
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: elev.activ == 1
+                                            ? Colors.green.withOpacity(0.1)
+                                            : Colors.grey.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        elev.activ == 1
+                                            ? l10n.active
+                                            : l10n.inactive,
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: elev.activ == 1
+                                              ? Colors.green
+                                              : Colors.grey,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      elev.email,
+                                      style: TextStyle(
+                                        color: Colors.grey[500],
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${l10n.codMatricol}: ${elev.codMatricol}',
+                                      style: TextStyle(
+                                        color: Colors.grey[400],
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.edit_outlined,
+                                        color: Colors.blue[400],
+                                        size: 22,
+                                      ),
+                                      onPressed: () =>
+                                          _showElevDialog(elev: elev),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.delete_outline,
+                                        color: Colors.red[300],
+                                        size: 22,
+                                      ),
+                                      onPressed: () => _deleteElev(elev),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }, childCount: elevi.length),
+                      ),
+                    );
+                  },
+                ),
                 const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
               ],
             ],
@@ -639,42 +1306,197 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       ),
       floatingActionButton: ScaleTransition(
         scale: _fabAnimation,
-        child: FloatingActionButton.extended(
-          onPressed: () => _showProfessorDialog(),
+        child: FloatingActionButton(
+          onPressed: () {
+            showGeneralDialog(
+              context: context,
+              barrierDismissible: true,
+              barrierLabel: 'Dismiss',
+              barrierColor: Colors.black54,
+              transitionDuration: const Duration(milliseconds: 300),
+              pageBuilder: (context, animation, secondaryAnimation) =>
+                  const SizedBox(),
+              transitionBuilder:
+                  (context, animation, secondaryAnimation, child) {
+                    return ScaleTransition(
+                      scale: CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutBack,
+                      ),
+                      child: FadeTransition(
+                        opacity: animation,
+                        child: Dialog(
+                          backgroundColor: Colors.transparent,
+                          elevation: 0,
+                          child: Container(
+                            constraints: const BoxConstraints(maxWidth: 300),
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF2F2F7),
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  l10n.add,
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black.withOpacity(0.8),
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                // Professor option
+                                Material(
+                                  color: Colors.white,
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(12),
+                                  ),
+                                  child: InkWell(
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                      _showProfessorDialog();
+                                    },
+                                    borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(12),
+                                    ),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 14,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 36,
+                                            height: 36,
+                                            decoration: BoxDecoration(
+                                              color: Colors.blue.withOpacity(
+                                                0.1,
+                                              ),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Icon(
+                                              Icons.person,
+                                              color: Colors.blue[600],
+                                              size: 20,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 14),
+                                          Expanded(
+                                            child: Text(
+                                              l10n.addProfessor,
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                          Icon(
+                                            Icons.chevron_right,
+                                            color: Colors.grey[400],
+                                            size: 22,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  height: 1,
+                                  color: Colors.grey.withOpacity(0.15),
+                                ),
+                                // Student option
+                                Material(
+                                  color: Colors.white,
+                                  borderRadius: const BorderRadius.vertical(
+                                    bottom: Radius.circular(12),
+                                  ),
+                                  child: InkWell(
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                      _showElevDialog();
+                                    },
+                                    borderRadius: const BorderRadius.vertical(
+                                      bottom: Radius.circular(12),
+                                    ),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 14,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 36,
+                                            height: 36,
+                                            decoration: BoxDecoration(
+                                              color: Colors.green.withOpacity(
+                                                0.1,
+                                              ),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Icon(
+                                              Icons.school,
+                                              color: Colors.green[600],
+                                              size: 20,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 14),
+                                          Expanded(
+                                            child: Text(
+                                              l10n.addStudent,
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                          Icon(
+                                            Icons.chevron_right,
+                                            color: Colors.grey[400],
+                                            size: 22,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+            );
+          },
           backgroundColor: Colors.black,
           foregroundColor: Colors.white,
           elevation: 4,
-          highlightElevation: 8,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
-          icon: const Icon(Icons.add),
-          label: Text(
-            l10n.addProfessor,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
+          shape: const CircleBorder(),
+          child: const Icon(Icons.add),
         ),
       ),
     );
   }
 
-  Widget _buildChartsSection(List<Professor> admins) {
+  Widget _buildChartsSection(List<Professor> admins, List<Elev> elevi) {
     final l10n = AppLocalizations.of(context)!;
-    // Prepare data for Activity Overview (using IDs as proxy for timeline)
-    // We'll take the last 10 admins to show recent "activity"
-    final recentAdmins = admins.length > 10
-        ? admins.sublist(admins.length - 10)
-        : admins;
 
-    final List<FlSpot> spots = [];
-    for (int i = 0; i < recentAdmins.length; i++) {
-      spots.add(FlSpot(i.toDouble(), recentAdmins[i].id.toDouble()));
-    }
+    final int totalProfessors = admins.length;
+    final int totalStudents = elevi.length;
+    final int total = totalProfessors + totalStudents;
 
-    // If no data, add some placeholders to avoid crash/empty chart
-    if (spots.isEmpty) {
-      spots.add(const FlSpot(0, 0));
-    }
+    // Calculate percentages for pie chart
+    final double profPercentage = total > 0
+        ? (totalProfessors / total) * 100
+        : 50;
+    final double studPercentage = total > 0
+        ? (totalStudents / total) * 100
+        : 50;
 
     return Center(
       child: Container(
@@ -685,54 +1507,121 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
           physics: const BouncingScrollPhysics(),
           shrinkWrap: true,
           children: [
+            // Stats Overview Card
             _buildChartCard(
-              title: l10n.idGrowth,
-              width: 400,
-              child: LineChart(
-                LineChartData(
-                  gridData: const FlGridData(show: false),
-                  titlesData: const FlTitlesData(show: false),
-                  borderData: FlBorderData(show: false),
-                  lineTouchData: LineTouchData(
-                    enabled: true,
-                    touchTooltipData: LineTouchTooltipData(
-                      tooltipBgColor: Colors.black87,
-                      getTooltipItems: (touchedSpots) {
-                        return touchedSpots.map((spot) {
-                          return LineTooltipItem(
-                            'ID: ${spot.y.toInt()}',
-                            const TextStyle(color: Colors.white),
-                          );
-                        }).toList();
-                      },
-                    ),
-                  ),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: spots,
-                      isCurved: true,
-                      curveSmoothness: 0.4,
-                      color: Theme.of(context).primaryColor,
-                      barWidth: 4,
-                      isStrokeCapRound: true,
-                      dotData: const FlDotData(show: false),
-                      belowBarData: BarAreaData(
-                        show: true,
+              title: l10n.total,
+              width: 320,
+              child: Row(
+                children: [
+                  // Professors stat
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            Theme.of(context).primaryColor.withOpacity(0.3),
-                            Theme.of(context).primaryColor.withOpacity(0.0),
+                            Colors.blue.shade50,
+                            Colors.blue.shade100.withOpacity(0.5),
                           ],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.person,
+                              color: Colors.blue[600],
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '$totalProfessors',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue[700],
+                            ),
+                          ),
+                          Text(
+                            l10n.professors,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.blue[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  // Students stat
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 8),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.green.shade50,
+                            Colors.green.shade100.withOpacity(0.5),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.school,
+                              color: Colors.green[600],
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '$totalStudents',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green[700],
+                            ),
+                          ),
+                          Text(
+                            l10n.students,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.green[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(width: 24),
+            // Distribution Pie Chart
             _buildChartCard(
               title: l10n.systemStatus,
               width: 280,
@@ -741,15 +1630,21 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                 children: [
                   PieChart(
                     PieChartData(
-                      sectionsSpace: 0,
-                      centerSpaceRadius: 40,
+                      sectionsSpace: 3,
+                      centerSpaceRadius: 35,
                       startDegreeOffset: -90,
                       sections: [
                         PieChartSectionData(
-                          color: Theme.of(context).primaryColor,
-                          value: 100,
+                          color: Colors.blue[500],
+                          value: profPercentage,
                           showTitle: false,
-                          radius: 15,
+                          radius: 20,
+                        ),
+                        PieChartSectionData(
+                          color: Colors.green[500],
+                          value: studPercentage,
+                          showTitle: false,
+                          radius: 20,
                         ),
                       ],
                     ),
@@ -758,17 +1653,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '${admins.length}',
+                        '$total',
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).primaryColor,
+                          color: Colors.grey[800],
                         ),
                       ),
                       Text(
-                        l10n.professors,
+                        l10n.total,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 11,
                           color: Colors.grey[600],
                           fontWeight: FontWeight.w500,
                         ),
@@ -817,6 +1712,80 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
           const SizedBox(height: 16),
           Expanded(child: child),
         ],
+      ),
+    );
+  }
+
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    required MaterialColor color,
+    TextInputType? keyboardType,
+    bool obscureText = false,
+    String? helperText,
+    String? Function(String?)? validator,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        obscureText: obscureText,
+        style: const TextStyle(fontSize: 16),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(
+            color: color[600],
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+          helperText: helperText,
+          helperStyle: TextStyle(color: Colors.grey[500], fontSize: 11),
+          floatingLabelBehavior: FloatingLabelBehavior.auto,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: color[400]!, width: 2),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.red[300]!, width: 1),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.red[400]!, width: 2),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
+          prefixIcon: Container(
+            margin: const EdgeInsets.only(left: 12, right: 8),
+            child: Icon(icon, color: color[600], size: 22),
+          ),
+          prefixIconConstraints: const BoxConstraints(minWidth: 50),
+          filled: true,
+          fillColor: Colors.white,
+        ),
+        validator: validator,
       ),
     );
   }

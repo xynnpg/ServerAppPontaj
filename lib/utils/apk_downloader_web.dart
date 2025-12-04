@@ -3,6 +3,6 @@ import 'dart:html' as html;
 
 void downloadApk() {
   const apkUrl =
-      'https://github.com/xynnpg/ServerAppPontaj/releases/download/v0.0.1-beta.3/app-release.apk';
+      'https://github.com/xynnpg/ServerAppPontaj/releases/latest/download/Pontaj.-.v0.0.1-beta.4.apk';
   html.window.open(apkUrl, '_blank');
 }
